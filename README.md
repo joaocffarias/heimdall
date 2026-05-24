@@ -22,40 +22,24 @@ Sistema completo, seguro e multi-estabelecimento para autorização de entrada e
 - Servidor remoto ou máquina local com **Docker** e **Docker Compose** instalados.
 - Caso utilize ambiente remoto, certifique-se de que as portas `80`, `443`, `4000` e `9001` estão abertas no firewall para acesso.
 
-### 2. Configurações Iniciais
-O sistema requer variáveis de ambiente configuradas antes de inicializar.
+### 2. Instalação Automatizada (One-Click Deploy)
+O sistema possui um script instalador universal que clona as configurações, descobre o IP da sua rede automaticamente e sobe toda a infraestrutura e o banco de dados.
 
-1. **Gere o arquivo de ambiente** copiando o template padrão:
-   ```bash
-   cp .env.example .env
-   ```
-2. **Edite o `.env`**: Abra o arquivo `.env` gerado e preencha as credenciais. 
-   - Configure o `SMTP_*` com suas credenciais de e-mail.
-   - As variáveis `WEB_URL`, `API_URL` e `MINIO_PUBLIC_URL` devem apontar para o IP da sua rede ou o domínio da sua máquina host.
+Na pasta raiz do projeto, execute:
 
-### 3. Subindo a Infraestrutura
-A aplicação está empacotada com Docker Compose para subir banco de dados, storage, gateway e a aplicação em si.
-
-Para fazer o build e iniciar todos os containers em background:
 ```bash
-docker compose up -d --build
+make install
 ```
-*(A primeira execução pode demorar alguns minutos para baixar as imagens e construir os serviços).*
+*(Se você não tiver o make, pode rodar direto com `./install.sh`).*
 
-### 4. Seed do Banco (Criando Administradores e Tenant)
-Depois que os containers estiverem online, inicialize o banco de dados e insira os dados base (como o usuário Mestre `SUPER_ADMIN`):
+O script solicitará a sua permissão/senhas se necessário, realizará o download das imagens Docker, criará o banco e exibirá, ao final, o link de acesso com as credenciais administrativas geradas para você.
 
-Se você utiliza o Makefile:
-```bash
-make migrate
-make seed
-```
-
-Ou rodando diretamente pelo Docker:
-```bash
-docker exec -it heimdall_api npx prisma migrate deploy
-docker exec -it heimdall_api npm run seed
-```
+### 3. Deploy Manual (Opcional)
+Se desejar gerenciar container por container manualmente sem o script:
+1. `cp .env.example .env` e configure suas variáveis.
+2. `docker compose up -d --build`
+3. `docker compose exec api npx prisma migrate deploy`
+4. `docker compose exec api npm run seed`
 
 ### 5. Acessar a Aplicação
 
