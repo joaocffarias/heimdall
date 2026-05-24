@@ -19,37 +19,51 @@ Sistema completo, seguro e multi-estabelecimento para autorização de entrada e
 ## 🚀 Como Iniciar (Produção / Homologação)
 
 ### 1. Requisitos
-- Servidor remoto com Docker e Docker Compose instalados.
-- Se for local na sua máquina, rode via ssh ou diretamente na pasta do projeto.
+- Servidor remoto ou máquina local com **Docker** e **Docker Compose** instalados.
+- Caso utilize ambiente remoto, certifique-se de que as portas `80`, `443`, `4000` e `9001` estão abertas no firewall para acesso.
 
 ### 2. Configurações Iniciais
-Rode o atalho do Makefile para criar seu `.env` a partir do template:
-```bash
-make setup
-```
-Abra o `.env` gerado e preencha as credenciais. No `.env`, certifique-se de preencher `SMTP_*` e credenciais padrão para banco de dados e senhas. As variáveis `NEXT_PUBLIC_` precisam apontar para o IP/domínio da sua máquina host.
+O sistema requer variáveis de ambiente configuradas antes de inicializar.
 
-### 3. Deploy
-Para copiar os arquivos para o servidor remoto e iniciar (conforme definido no seu `Makefile`):
+1. **Gere o arquivo de ambiente** copiando o template padrão:
+   ```bash
+   cp .env.example .env
+   ```
+2. **Edite o `.env`**: Abra o arquivo `.env` gerado e preencha as credenciais. 
+   - Configure o `SMTP_*` com suas credenciais de e-mail.
+   - As variáveis `WEB_URL`, `API_URL` e `MINIO_PUBLIC_URL` devem apontar para o IP da sua rede ou o domínio da sua máquina host.
 
+### 3. Subindo a Infraestrutura
+A aplicação está empacotada com Docker Compose para subir banco de dados, storage, gateway e a aplicação em si.
+
+Para fazer o build e iniciar todos os containers em background:
 ```bash
-make deploy
+docker compose up -d --build
 ```
-*(Certifique-se de que o Makefile contém o `REMOTE_HOST` correto).*
+*(A primeira execução pode demorar alguns minutos para baixar as imagens e construir os serviços).*
 
 ### 4. Seed do Banco (Criando Administradores e Tenant)
-Depois que os containers estiverem saudáveis e online (aproximadamente após uns 15-20 segundos na primeira inicialização), rode as migrations e o Seed com o usuário Mestre (SUPER_ADMIN):
+Depois que os containers estiverem online, inicialize o banco de dados e insira os dados base (como o usuário Mestre `SUPER_ADMIN`):
 
+Se você utiliza o Makefile:
 ```bash
 make migrate
 make seed
 ```
 
+Ou rodando diretamente pelo Docker:
+```bash
+docker exec -it heimdall_api npx prisma migrate deploy
+docker exec -it heimdall_api npm run seed
+```
+
 ### 5. Acessar a Aplicação
 
-- **Frontend Interface (Portaria e Admin)**: `http://192.168.18.223` (Nginx mapeia a porta 80).
-- **Swagger Documentation API (Dev)**: `http://192.168.18.223:4000/docs`
-- **MinIO Console**: `http://192.168.18.223:9001` (para gerenciar os buckets de imagens manualmente).
+Acesse no seu navegador usando o IP ou domínio configurado no seu servidor (ou `localhost` se estiver rodando na sua própria máquina):
+
+- **Painel Administrativo e Portaria**: `https://<IP_OU_DOMINIO>` (Nginx configurado como proxy reverso atuando na porta 443).
+- **Swagger Documentation API (Dev)**: `http://<IP_OU_DOMINIO>:4000/docs`
+- **MinIO Console (Painel de Storage)**: `http://<IP_OU_DOMINIO>:9001` (para gerenciar os buckets de imagens manualmente).
 
 ### 🔑 Credenciais Padrão do Seed
 - **SuperAdmin:** `superadmin@heimdall.local` / `admin@2025`
