@@ -1,0 +1,14 @@
+node_modules/
+.env
+*.log
+dist/
+build/
+.next/
+.DS_Store
+coverage/
+minio-data/
+postgres-data/
+redis-data/
+evolution-data/
+*.local
+.turbo/

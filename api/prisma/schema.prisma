@@ -1,0 +1,237 @@
+// Prisma Schema — Heimdall
+// Multi-tenant: sistema de controle de entrada/saída de materiais de visitantes
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── ENUMS ──────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  SUPER_ADMIN  // administrador do sistema (acesso total)
+  ADMIN        // administrador do estabelecimento
+  RESPONSIBLE  // responsável que assina/aprova visitas
+  GUARD        // porteiro — registra e libera visitantes
+}
+
+enum VisitStatus {
+  PENDING        // registrada pela portaria, aguardando envio
+  IN_PREMISES    // visitante está fisicamente dentro das dependências
+  UNDER_REVIEW   // notificação enviada, aguardando assinatura
+  APPROVED       // assinada e aprovada pelo responsável, aguardando liberação final
+
+  REJECTED       // rejeitada pelo responsável
+  COMPLETED      // visitante saiu — visita encerrada
+  CANCELLED      // cancelada pela portaria
+}
+
+enum NotificationChannel {
+  EMAIL
+  WHATSAPP
+  SMS
+}
+
+enum NotificationType {
+  VISIT_PENDING_REVIEW  // aviso para responsável assinar
+  VISIT_APPROVED        // aviso portaria: aprovado
+  VISIT_REJECTED        // aviso portaria: rejeitado
+  VISIT_COMPLETED       // confirmação de saída
+}
+
+enum VisitorType {
+  VISITANTE
+  MILITAR
+  SERVIDOR_CIVIL
+}
+
+enum MaterialCategory {
+  ELETRONICO     // notebook, celular, câmera...
+  FERRAMENTA     // chave de fenda, furadeira...
+  DOCUMENTO      // pasta, relatório, contrato...
+  EQUIPAMENTO    // projetor, servidor...
+  VEICULO        // carro, moto, bicicleta...
+  OUTRO
+}
+
+// ─── TENANT (Estabelecimento) ────────────────────────────────────────────────
+
+model Tenant {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  cnpj      String?
+  address   String?
+  phone     String?
+  email     String?
+  logoPath  String?
+  active    Boolean  @default(true)
+  settings  Json?    @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users  User[]
+  visits Visit[]
+
+  @@map("tenants")
+}
+
+// ─── USER ────────────────────────────────────────────────────────────────────
+
+model User {
+  id        String   @id @default(uuid())
+  tenantId  String
+  name      String
+  email     String
+  phone     String?
+  whatsapp  String?
+  role      UserRole @default(GUARD)
+  password  String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  signatures Signature[]
+  createdVisits Visit[] @relation("CreatedVisits")
+
+  @@unique([email, tenantId])
+  @@map("users")
+}
+
+// ─── VISIT ───────────────────────────────────────────────────────────────────
+
+model Visit {
+  id       String @id @default(uuid())
+  tenantId String
+
+  // Dados do visitante
+  visitorName    String
+  visitorDoc     String   // CPF ou RG
+  visitorCompany String?
+  visitorPhone   String?
+  visitorEmail   String?
+  visitorPhoto   String?  // caminho no MinIO
+  visitorType    VisitorType @default(VISITANTE)
+  isMaterialExitOnly Boolean  @default(false)
+
+  // Destino e propósito
+  destination String  // departamento/setor
+  purpose     String  // motivo da visita
+
+  // Responsável que vai aprovar
+  responsibleName     String
+  responsibleEmail    String?
+  responsiblePhone    String?
+  responsibleWhatsapp String?
+
+  // Status e tokens
+  status          VisitStatus @default(PENDING)
+  signToken       String?     @unique  // token para link de assinatura
+  signTokenExp    DateTime?            // expiração do token
+  materialChanges String?              // anotações de alteração de material na saída
+
+  // Usuário que criou (porteiro)
+  createdById String?
+  createdBy   User?   @relation("CreatedVisits", fields: [createdById], references: [id])
+
+  // Timestamps
+  entryAt   DateTime?
+  exitAt    DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  tenant            Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  materials         Material[]
+  signature         Signature?
+  notificationLogs  NotificationLog[]
+
+  @@map("visits")
+}
+
+// ─── MATERIAL ────────────────────────────────────────────────────────────────
+
+model Material {
+  id           String           @id @default(uuid())
+  visitId      String
+  name         String
+  description  String?
+  quantity     Int              @default(1)
+  category     MaterialCategory @default(OUTRO)
+  serialNumber String?
+  brand        String?
+  createdAt    DateTime         @default(now())
+
+  visit  Visit           @relation(fields: [visitId], references: [id], onDelete: Cascade)
+  photos MaterialPhoto[]
+
+  @@map("materials")
+}
+
+// ─── MATERIAL PHOTO ──────────────────────────────────────────────────────────
+
+model MaterialPhoto {
+  id          String   @id @default(uuid())
+  materialId  String
+  storagePath String   // caminho no MinIO
+  filename    String
+  mimeType    String   @default("image/jpeg")
+  sizeBytes   Int?
+  createdAt   DateTime @default(now())
+
+  material Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
+
+  @@map("material_photos")
+}
+
+// ─── SIGNATURE ───────────────────────────────────────────────────────────────
+
+model Signature {
+  id      String  @id @default(uuid())
+  visitId String  @unique
+  userId  String? // usuário interno (se tiver conta)
+
+  // Dados do signatário
+  signerName      String
+  signerEmail     String?
+  signerIp        String
+  signerUserAgent String?
+
+  // Dados criptográficos
+  signatureImagePath String  // PNG salvo no MinIO
+  signatureHash      String  // SHA-256 da assinatura + dados
+  signatureData      Json    // pontos do canvas (para auditoria)
+  metadataHash       String  // SHA-256 dos metadados (nome+ip+timestamp)
+
+  // Decisão
+  approved  Boolean  @default(true)
+  reason    String?  // motivo se rejeitado
+  signedAt  DateTime @default(now())
+
+  visit Visit @relation(fields: [visitId], references: [id], onDelete: Cascade)
+  user  User? @relation(fields: [userId], references: [id])
+
+  @@map("signatures")
+}
+
+// ─── NOTIFICATION LOG ────────────────────────────────────────────────────────
+
+model NotificationLog {
+  id         String              @id @default(uuid())
+  visitId    String
+  type       NotificationType
+  channel    NotificationChannel
+  recipient  String
+  status     String              // sent | failed | pending
+  externalId String?
+  errorMsg   String?
+  sentAt     DateTime            @default(now())
+
+  visit Visit @relation(fields: [visitId], references: [id], onDelete: Cascade)
+
+  @@map("notification_logs")
+}
