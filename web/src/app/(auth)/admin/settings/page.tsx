@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { 
   Settings, Save, Upload, Shield, 
-  Clock, Bell, Loader2, Camera 
+  Clock, Bell, Loader2, Camera,
+  Download, Database, Server, RefreshCw
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import toast from 'react-hot-toast';
@@ -16,6 +17,10 @@ export default function SettingsPage() {
     notificationsEnabled: true,
   });
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
+
+  const [exportingFull, setExportingFull] = useState(false);
+  const [restoringBackup, setRestoringBackup] = useState(false);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
 
   useEffect(() => {
     loadSettings();
@@ -33,6 +38,51 @@ export default function SettingsPage() {
       toast.error('Erro ao carregar configurações');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleExportFull = async () => {
+    setExportingFull(true);
+    try {
+      const res = await api.get('/system/backup/full', { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'heimdall-full-backup.zip');
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+      toast.success('Backup completo gerado com sucesso!');
+    } catch {
+      toast.error('Erro ao gerar backup completo');
+    } finally {
+      setExportingFull(false);
+    }
+  };
+
+  const handleRestoreBackup = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!confirm('ATENÇÃO: A restauração de registros apagará conflitos atuais. Deseja continuar?')) {
+      e.target.value = '';
+      return;
+    }
+
+    setRestoringBackup(true);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      await api.post('/system/restore', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      toast.success('Backup restaurado com sucesso!');
+    } catch {
+      toast.error('Erro ao restaurar backup');
+    } finally {
+      setRestoringBackup(false);
+      e.target.value = '';
     }
   };
 
@@ -283,6 +333,48 @@ export default function SettingsPage() {
               </div>
             </div>
 
+            <div className="h-px bg-navy-600" />
+
+            {/* Manutenção e Sistema */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
+                <Server className="w-4 h-4 text-accent" /> Manutenção e Sistema
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <button 
+                  onClick={handleExportFull} 
+                  disabled={exportingFull}
+                  className="p-4 rounded-xl border border-navy-600 bg-navy-800/30 hover:bg-navy-700/50 transition-colors flex flex-col gap-2 items-start text-left"
+                >
+                  <div className="flex items-center gap-2 text-slate-200 font-medium">
+                    {exportingFull ? <Loader2 className="w-4 h-4 animate-spin text-accent" /> : <Database className="w-4 h-4 text-accent" />}
+                    Gerar Backup Completo
+                  </div>
+                  <p className="text-xs text-slate-400">Gera um .zip único com histórico de visitas, usuários e imagens.</p>
+                </button>
+
+                <label className="p-4 rounded-xl border border-navy-600 bg-navy-800/30 hover:bg-navy-700/50 transition-colors flex flex-col gap-2 items-start text-left cursor-pointer group">
+                  <div className="flex items-center gap-2 text-slate-200 font-medium">
+                    {restoringBackup ? <Loader2 className="w-4 h-4 animate-spin text-accent" /> : <Upload className="w-4 h-4 text-accent group-hover:-translate-y-0.5 transition-transform" />}
+                    Restaurar Backup
+                  </div>
+                  <p className="text-xs text-slate-400">Importe um arquivo .zip ou .json para restaurar.</p>
+                  <input type="file" accept=".zip,.json" className="hidden" onChange={handleRestoreBackup} />
+                </label>
+
+                <button 
+                  onClick={() => setShowUpdateModal(true)}
+                  className="p-4 rounded-xl border border-navy-600 bg-navy-800/30 hover:bg-navy-700/50 transition-colors flex flex-col gap-2 items-start text-left"
+                >
+                  <div className="flex items-center gap-2 text-slate-200 font-medium">
+                    <RefreshCw className="w-4 h-4 text-accent" />
+                    Atualizar Sistema
+                  </div>
+                  <p className="text-xs text-slate-400">Ver como atualizar a plataforma via servidor.</p>
+                </button>
+              </div>
+            </div>
+
             <div className="pt-4 flex justify-end">
               <button onClick={handleSave} disabled={saving} className="btn-primary gap-2 min-w-[140px]">
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
@@ -328,6 +420,29 @@ export default function SettingsPage() {
               </button>
               <button onClick={handleTestLdap} disabled={testingLdap} className="btn-primary min-w-[100px]">
                 {testingLdap ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'Testar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Atualização */}
+      {showUpdateModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-navy-900 rounded-xl max-w-md w-full p-6 border border-navy-700 shadow-2xl">
+            <h3 className="text-lg font-bold text-slate-100 mb-2 flex items-center gap-2">
+              <RefreshCw className="w-5 h-5 text-accent" /> 
+              Atualização do Sistema
+            </h3>
+            <p className="text-sm text-slate-400 mb-4">
+              Para garantir a segurança dos dados, a atualização completa do sistema deve ser disparada diretamente pelo terminal do servidor que o hospeda.
+            </p>
+            <div className="bg-black/50 p-4 rounded-lg font-mono text-xs text-slate-300 mb-6 border border-navy-800 select-all overflow-x-auto whitespace-pre">
+              {`cd /usr/local/heimdall && \\\ngit pull && \\\n./install.sh`}
+            </div>
+            <div className="flex justify-end">
+              <button onClick={() => setShowUpdateModal(false)} className="btn-primary min-w-[100px]">
+                Entendi
               </button>
             </div>
           </div>

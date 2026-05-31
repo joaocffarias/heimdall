@@ -13,6 +13,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { ReportsModule } from './reports/reports.module';
 import { EventsGateway } from './gateway/events.gateway';
 import { HealthController } from './health.controller';
+import { SystemModule } from './system/system.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { HealthController } from './health.controller';
     StorageModule,
     NotificationsModule,
     ReportsModule,
+    SystemModule,
   ],
   controllers: [HealthController],
   providers: [EventsGateway],
