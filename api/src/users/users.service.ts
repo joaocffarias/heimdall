@@ -9,7 +9,7 @@ export class UsersService {
   async findAll(tenantId: string) {
     return this.prisma.user.findMany({
       where: { tenantId },
-      select: { id: true, name: true, email: true, phone: true, whatsapp: true, role: true, active: true, createdAt: true },
+      select: { id: true, name: true, email: true, phone: true, whatsapp: true, role: true, active: true, forcePasswordChange: true, isChiefOfStaff: true, createdAt: true },
       orderBy: { name: 'asc' },
     });
   }
@@ -23,7 +23,7 @@ export class UsersService {
     const hashed = await bcrypt.hash(data.password, 12);
     return this.prisma.user.create({
       data: { ...data, tenantId, password: hashed },
-      select: { id: true, name: true, email: true, role: true, active: true },
+      select: { id: true, name: true, email: true, role: true, active: true, isChiefOfStaff: true },
     });
   }
 
@@ -34,14 +34,27 @@ export class UsersService {
     return this.prisma.user.update({
       where: { id },
       data,
-      select: { id: true, name: true, email: true, role: true, active: true },
+      select: { id: true, name: true, email: true, role: true, active: true, isChiefOfStaff: true },
     });
   }
 
-  async deactivate(id: string) {
+  async toggleStatus(id: string, active: boolean) {
     return this.prisma.user.update({
       where: { id },
-      data: { active: false },
+      data: { active },
     });
+  }
+
+  async remove(id: string) {
+    try {
+      return await this.prisma.user.delete({
+        where: { id },
+      });
+    } catch (e: any) {
+      if (e.code === 'P2003') {
+        throw new ConflictException('O usuário possui registros vinculados (como visitas ou aprovações) e não pode ser excluído. Em vez disso, desative-o.');
+      }
+      throw e;
+    }
   }
 }

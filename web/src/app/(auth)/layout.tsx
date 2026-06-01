@@ -51,8 +51,64 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
   const visibleNav = navItems.filter((item) => item.roles.includes(user.role));
 
+  const PasswordChangeModal = () => {
+    const [newPassword, setNewPassword] = useState('');
+    const [saving, setSaving] = useState(false);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+      setSaving(true);
+      try {
+        await api.post('/auth/change-password', { password: newPassword });
+        toast.success('Senha atualizada com sucesso!');
+        useAuthStore.setState({ user: { ...user, forcePasswordChange: false } });
+      } catch (err: any) {
+        toast.error(err.response?.data?.message || 'Erro ao alterar senha');
+      } finally {
+        setSaving(false);
+      }
+    };
+
+    if (!user.forcePasswordChange) return null;
+
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy-900/90 backdrop-blur-sm">
+        <div className="card p-8 max-w-md w-full mx-4 shadow-glow-lg border-accent/30">
+          <div className="flex justify-center mb-6">
+            <div className="w-16 h-16 rounded-full bg-accent/20 flex items-center justify-center">
+              <Shield className="w-8 h-8 text-accent" />
+            </div>
+          </div>
+          <h2 className="text-2xl font-bold text-center text-slate-100 mb-2">Atualização de Senha</h2>
+          <p className="text-slate-400 text-center text-sm mb-6">
+            Por questões de segurança, é necessário definir uma nova senha para o seu primeiro acesso ou porque sua senha foi redefinida pelo administrador.
+          </p>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="input-label">Nova Senha</label>
+              <input
+                type="password"
+                className="input w-full"
+                placeholder="Mínimo 6 caracteres"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                required
+                minLength={6}
+              />
+            </div>
+            <button type="submit" disabled={saving || newPassword.length < 6} className="btn-primary w-full justify-center">
+              {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Atualizar e Continuar'}
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen flex bg-navy-900">
+      <PasswordChangeModal />
+      
       {/* ─── Sidebar ─────────────────────────────────────────────── */}
       <aside className="w-64 min-h-screen bg-navy-800 border-r border-navy-600 flex flex-col">
         {/* Logo */}

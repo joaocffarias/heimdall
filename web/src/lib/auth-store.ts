@@ -12,6 +12,7 @@ interface User {
   tenantId: string;
   tenantName: string;
   tenantSlug: string;
+  forcePasswordChange?: boolean;
 }
 
 interface AuthState {

@@ -90,8 +90,10 @@ model User {
   phone     String?
   whatsapp  String?
   role      UserRole @default(GUARD)
-  password  String
-  active    Boolean  @default(true)
+  password             String
+  forcePasswordChange  Boolean  @default(false)
+  isChiefOfStaff       Boolean  @default(false)
+  active               Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

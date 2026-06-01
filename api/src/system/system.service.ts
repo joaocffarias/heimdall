@@ -152,8 +152,13 @@ export class SystemService {
 
   private async restoreUsers(tenantId: string, users: any[]) {
     for (const user of users) {
-      const existing = await this.prisma.user.findUnique({ where: { id: user.id } });
-      if (existing) continue; // Pular se já existe
+      const existingById = await this.prisma.user.findUnique({ where: { id: user.id } });
+      if (existingById) continue; // Pular se já existe pelo ID
+
+      const existingByEmail = await this.prisma.user.findUnique({ 
+        where: { email_tenantId: { email: user.email, tenantId } } 
+      });
+      if (existingByEmail) continue; // Pular se já existe pelo e-mail neste estabelecimento
 
       await this.prisma.user.create({
         data: {

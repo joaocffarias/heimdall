@@ -66,6 +66,7 @@ export class AuthService {
       role: user.role,
       tenantId: user.tenantId,
       tenantSlug: user.tenant.slug,
+      forcePasswordChange: user.forcePasswordChange,
     };
 
     return {
@@ -78,6 +79,7 @@ export class AuthService {
         tenantId: user.tenantId,
         tenantName: user.tenant.name,
         tenantSlug: user.tenant.slug,
+        forcePasswordChange: user.forcePasswordChange,
       },
     };
   }
@@ -86,6 +88,18 @@ export class AuthService {
     return this.prisma.user.findUnique({
       where: { id: userId },
       include: { tenant: true },
+    });
+  }
+
+  async changePassword(userId: string, newPassword: string) {
+    const hashed = await bcrypt.hash(newPassword, 12);
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        password: hashed,
+        forcePasswordChange: false,
+      },
+      select: { id: true, name: true, forcePasswordChange: true },
     });
   }
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, useFieldArray } from 'react-hook-form';
 import Webcam from 'react-webcam';
@@ -53,10 +53,17 @@ export default function NewVisitPage() {
   const [loading, setLoading] = useState(false);
   const [showCamera, setShowCamera] = useState<number | null>(null); // index do material
   const [capturedPhotos, setCapturedPhotos] = useState<Record<number, string[]>>({}); // idx -> base64[]
+  const [chiefs, setChiefs] = useState<any[]>([]);
   const webcamRef = useRef<Webcam>(null);
 
+  useEffect(() => {
+    api.get('/users').then((res) => {
+      setChiefs(res.data.filter((u: any) => u.isChiefOfStaff && u.active));
+    }).catch(() => toast.error('Erro ao carregar autoridades'));
+  }, []);
+
   const {
-    register, control, handleSubmit, watch,
+    register, control, handleSubmit, watch, setValue,
     formState: { errors },
   } = useForm<VisitForm>({
     defaultValues: {
@@ -453,11 +460,32 @@ export default function NewVisitPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
-                <label className="input-label">Nome do responsável *</label>
+                <label className="input-label">Autoridade Liberadora *</label>
                 <div className="relative">
                   <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                  <input {...register('responsibleName', { required: 'Nome do responsável obrigatório' })}
-                    className="input pl-10" placeholder="Nome completo" />
+                  <select
+                    className="input pl-10"
+                    {...register('responsibleName', { required: 'Autoridade responsável obrigatória' })}
+                    onChange={(e) => {
+                      register('responsibleName').onChange(e);
+                      const chiefName = e.target.value;
+                      const chief = chiefs.find((c) => c.name === chiefName);
+                      if (chief) {
+                        setValue('responsibleEmail', chief.email);
+                        setValue('responsibleWhatsapp', chief.whatsapp || '');
+                        setValue('responsiblePhone', chief.phone || '');
+                      } else {
+                        setValue('responsibleEmail', '');
+                        setValue('responsibleWhatsapp', '');
+                        setValue('responsiblePhone', '');
+                      }
+                    }}
+                  >
+                    <option value="">Selecione um responsável</option>
+                    {chiefs.map((c) => (
+                      <option key={c.id} value={c.name}>{c.name}</option>
+                    ))}
+                  </select>
                 </div>
                 {errors.responsibleName && <p className="text-danger text-xs mt-1">{errors.responsibleName.message}</p>}
               </div>
@@ -467,7 +495,7 @@ export default function NewVisitPage() {
                 <div className="relative">
                   <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                   <input {...register('responsibleEmail')}
-                    className="input pl-10" placeholder="responsavel@empresa.com" type="email" />
+                    className="input pl-10 bg-navy-800 text-slate-400 cursor-not-allowed" placeholder="Auto-preenchido" type="email" readOnly />
                 </div>
               </div>
 
@@ -476,7 +504,7 @@ export default function NewVisitPage() {
                 <div className="relative">
                   <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                   <input {...register('responsibleWhatsapp')}
-                    className="input pl-10" placeholder="(11) 9 9999-9999" />
+                    className="input pl-10 bg-navy-800 text-slate-400 cursor-not-allowed" placeholder="Auto-preenchido" readOnly />
                 </div>
               </div>
 
@@ -485,7 +513,7 @@ export default function NewVisitPage() {
                 <div className="relative">
                   <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                   <input {...register('responsiblePhone')}
-                    className="input pl-10" placeholder="(11) 9 9999-9999" />
+                    className="input pl-10 bg-navy-800 text-slate-400 cursor-not-allowed" placeholder="Auto-preenchido" readOnly />
                 </div>
               </div>
             </div>

@@ -29,9 +29,15 @@ export class UsersController {
     return this.usersService.update(id, req.user.tenantId, dto);
   }
 
+  @Patch(':id/status')
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  toggleStatus(@Param('id') id: string, @Body('active') active: boolean) {
+    return this.usersService.toggleStatus(id, active);
+  }
+
   @Delete(':id')
   @Roles('ADMIN', 'SUPER_ADMIN')
-  deactivate(@Param('id') id: string) {
-    return this.usersService.deactivate(id);
+  remove(@Param('id') id: string) {
+    return this.usersService.remove(id);
   }
 }
