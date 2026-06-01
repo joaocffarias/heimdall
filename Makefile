@@ -39,7 +39,7 @@ status:
 	@docker compose ps
 
 migrate:
-	@docker compose exec api npx prisma migrate deploy
+	@docker compose exec api npx prisma db push --accept-data-loss
 
 seed:
 	@docker compose exec api npm run seed

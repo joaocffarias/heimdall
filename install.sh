@@ -60,8 +60,8 @@ docker compose up -d --build
 echo -e "\n${YELLOW}[4/5] Aguardando a inicialização da API (20 segundos)...${NC}"
 sleep 20
 
-echo -e "${YELLOW}Executando Migrations do banco de dados...${NC}"
-docker compose exec -T api npx prisma migrate deploy
+echo -e "${YELLOW}Executando sincronização do banco de dados (db push)...${NC}"
+docker compose exec -T api npx prisma db push --accept-data-loss
 
 echo -e "${YELLOW}Inserindo dados iniciais (Seed)...${NC}"
 docker compose exec -T api npm run seed
