@@ -7,6 +7,7 @@ import {
   Download, Database, Server, RefreshCw
 } from 'lucide-react';
 import { api } from '@/lib/api';
+import { useAuthStore } from '@/lib/auth-store';
 import toast from 'react-hot-toast';
 
 export default function SettingsPage() {
@@ -90,6 +91,11 @@ export default function SettingsPage() {
     setSaving(true);
     try {
       await api.patch('/tenants/current/settings', settings);
+      
+      useAuthStore.setState((state) => ({
+        user: state.user ? { ...state.user, sessionTimeout: settings.sessionTimeout } : null
+      }));
+
       toast.success('Configurações salvas!');
     } catch {
       toast.error('Erro ao salvar configurações');
@@ -190,14 +196,14 @@ export default function SettingsPage() {
               </h3>
               <div className="grid grid-cols-1 gap-4">
                 <div className="space-y-2">
-                  <label className="input-label">Tempo de Sessão (horas)</label>
+                  <label className="input-label">Tempo de Sessão (minutos)</label>
                   <input 
                     type="number" 
-                    value={settings.sessionTimeout || 8}
+                    value={settings.sessionTimeout || 480}
                     onChange={(e) => setSettings({ ...settings, sessionTimeout: parseInt(e.target.value) })}
                     className="input" 
                     min="1" 
-                    max="72"
+                    max="1440"
                   />
                   <p className="text-xs text-slate-500">Tempo máximo de inatividade antes de deslogar automaticamente.</p>
                 </div>

@@ -41,6 +41,33 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
     }
   }, [token, router, hydrated]);
 
+  useEffect(() => {
+    if (!token || !user) return;
+
+    const timeoutMinutes = user.sessionTimeout || 480;
+    const timeoutMs = timeoutMinutes * 60 * 1000;
+    
+    let inactivityTimer: ReturnType<typeof setTimeout>;
+
+    const resetTimer = () => {
+      clearTimeout(inactivityTimer);
+      inactivityTimer = setTimeout(() => {
+        toast.error('Sessão expirada por inatividade');
+        logout();
+      }, timeoutMs);
+    };
+
+    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+    events.forEach(event => document.addEventListener(event, resetTimer));
+    
+    resetTimer();
+
+    return () => {
+      clearTimeout(inactivityTimer);
+      events.forEach(event => document.removeEventListener(event, resetTimer));
+    };
+  }, [token, user, logout]);
+
   if (!hydrated || !token || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-navy-900 text-accent">

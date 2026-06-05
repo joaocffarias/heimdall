@@ -13,6 +13,7 @@ interface User {
   tenantName: string;
   tenantSlug: string;
   forcePasswordChange?: boolean;
+  sessionTimeout?: number;
 }
 
 interface AuthState {

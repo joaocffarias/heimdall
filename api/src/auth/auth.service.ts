@@ -69,8 +69,10 @@ export class AuthService {
       forcePasswordChange: user.forcePasswordChange,
     };
 
+    const sessionTimeout = settings.sessionTimeout || 480;
+
     return {
-      access_token: this.jwt.sign(payload),
+      access_token: this.jwt.sign(payload, { expiresIn: `${sessionTimeout}m` }),
       user: {
         id: user.id,
         name: user.name,
@@ -80,6 +82,7 @@ export class AuthService {
         tenantName: user.tenant.name,
         tenantSlug: user.tenant.slug,
         forcePasswordChange: user.forcePasswordChange,
+        sessionTimeout: sessionTimeout,
       },
     };
   }
