@@ -28,8 +28,12 @@ Sistema completo, seguro e multi-estabelecimento para autorização de entrada e
 ### 2. Instalação Automática (One-Click Deploy)
 A instalação completa de todas as dependências, banco de dados, geração de arquivos de ambiente (`.env`) e descoberta de IP foi simplificada em um único script interativo.
 
-1. Baixe os arquivos do projeto para o seu servidor.
-2. Acesse a pasta raiz e conceda permissão de execução (se necessário):
+1. Clone o repositório do projeto no seu servidor:
+   ```bash
+   git clone https://github.com/joaocffarias/heimdall.git
+   cd heimdall
+   ```
+2. Conceda permissão de execução ao instalador:
    ```bash
    chmod +x install.sh
    ```
