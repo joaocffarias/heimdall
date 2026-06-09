@@ -158,7 +158,9 @@ export class ReportsService {
               for (const photo of mat.photos) {
                 try {
                   const buffer = await this.storage.get(photo.storagePath);
-                  const base64 = `data:${photo.mimeType};base64,${buffer.toString('base64')}`;
+                  const sharp = require('sharp');
+                  const jpegBuffer = await sharp(buffer).jpeg({ quality: 85 }).toBuffer();
+                  const base64 = `data:image/jpeg;base64,${jpegBuffer.toString('base64')}`;
                   materialPhotosContent.push({ image: base64, width: 200, margin: [0, 0, 0, 12] });
                 } catch (e) {
                   materialPhotosContent.push({ text: '[ Erro ao carregar imagem ]', color: 'red', fontSize: 8, margin: [0, 0, 0, 12] });
