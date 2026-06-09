@@ -120,7 +120,7 @@ export default function ReviewVisitsPage() {
                         <Link href={`/visits/${visit.id}`} className="btn-ghost p-2" title="Ver detalhes">
                           <Eye className="w-4 h-4" />
                         </Link>
-                        {visit.signToken && (
+                        {visit.signToken && user?.role !== 'GUARD' && (
                           <>
                             <button
                               onClick={() => copySignLink(visit.signToken as string)}

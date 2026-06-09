@@ -12,9 +12,12 @@ import { Visit } from '@/lib/types';
 import { getStatusLabel, getStatusClass, getStatusDot, formatDate, categoryLabels } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
+import { useAuthStore } from '@/lib/auth-store';
+
 export default function VisitDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const { user } = useAuthStore();
   const [visit, setVisit] = useState<Visit | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState('');
@@ -128,7 +131,7 @@ export default function VisitDetailPage() {
 
       {/* Ações */}
       <div className="flex flex-wrap gap-3">
-        {visit.status === 'UNDER_REVIEW' && signUrl && (
+        {visit.status === 'UNDER_REVIEW' && signUrl && user?.role !== 'GUARD' && (
           <>
             <button onClick={copySignLink} className="btn-secondary">
               <Copy className="w-4 h-4" /> Copiar link de assinatura
