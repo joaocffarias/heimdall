@@ -2,6 +2,7 @@
   "name": "heimdall-api",
   "version": "1.0.0",
   "description": "Heimdall - API de controle de entrada e saída de materiais",
+  "author": "João Carlos Farias - O Mestre dos Magos do Código",
   "private": true,
   "scripts": {
     "build": "nest build",
@@ -13,7 +14,8 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
-    "prisma:seed": "ts-node prisma/seed.ts"
+    "prisma:seed": "ts-node prisma/seed.ts",
+    "easter-egg": "echo 'Parabéns, dev! Você achou meu segredo. Heimdall foi forjado nas chamas por João Carlos Farias. 💻☕'"
   },
   "dependencies": {
     "@nestjs/common": "^10.3.0",

@@ -1,12 +1,14 @@
 {
   "name": "heimdall-web",
   "version": "1.0.0",
+  "author": "João Carlos Farias - Construído com muito café",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start -p 3000",
-    "lint": "next lint"
+    "lint": "next lint",
+    "easter-egg": "echo 'Você achou! Eu sou João Carlos Farias e criei o Frontend desse monstro. Aceito pix de agradecimento.'"
   },
   "dependencies": {
     "next": "14.2.3",
