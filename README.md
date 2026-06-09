@@ -22,29 +22,26 @@ Sistema completo, seguro e multi-estabelecimento para autorização de entrada e
 ## 🚀 Como Iniciar (Produção / Homologação)
 
 ### 1. Requisitos
-- Servidor remoto ou máquina local com **Docker** e **Docker Compose** instalados.
-- Caso utilize ambiente remoto, certifique-se de que as portas `80`, `443`, `4000` e `9001` estão abertas no firewall para acesso.
+- Servidor remoto ou máquina local com **Docker** e **Docker Compose** instalados (Linux preferencialmente).
+- Certifique-se de que as portas `80`, `443`, `4000` e `9001` estejam liberadas no firewall da máquina.
 
-### 2. Instalação Automatizada (One-Click Deploy)
-O sistema possui um script instalador universal que clona as configurações, descobre o IP da sua rede automaticamente e sobe toda a infraestrutura e o banco de dados.
+### 2. Instalação Automática (One-Click Deploy)
+A instalação completa de todas as dependências, banco de dados, geração de arquivos de ambiente (`.env`) e descoberta de IP foi simplificada em um único script interativo.
 
-Na pasta raiz do projeto, execute:
+1. Baixe os arquivos do projeto para o seu servidor.
+2. Acesse a pasta raiz e conceda permissão de execução (se necessário):
+   ```bash
+   chmod +x install.sh
+   ```
+3. Execute o script de instalação:
+   ```bash
+   ./install.sh
+   ```
 
-```bash
-make install
-```
-*(Se você não tiver o make, pode rodar direto com `./install.sh`).*
+> [!NOTE]
+> O instalador fará o download das imagens Docker necessárias, criará o banco, realizará a injeção inicial de dados (seeds) e subirá todos os serviços. Ao final, ele exibirá o IP/Link de acesso gerado e suas credenciais.
 
-O script solicitará a sua permissão/senhas se necessário, realizará o download das imagens Docker, criará o banco e exibirá, ao final, o link de acesso com as credenciais administrativas geradas para você.
-
-### 3. Deploy Manual (Opcional)
-Se desejar gerenciar container por container manualmente sem o script:
-1. `cp .env.example .env` e configure suas variáveis.
-2. `docker compose up -d --build`
-3. `docker compose exec api npx prisma db push --accept-data-loss`
-4. `docker compose exec api npm run seed`
-
-### 4. Acessar a Aplicação
+### 3. Acessar a Aplicação
 
 Acesse no seu navegador usando o IP ou domínio configurado no seu servidor (ou `localhost` se estiver rodando na sua própria máquina):
 
